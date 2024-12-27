@@ -136,6 +136,13 @@ public class ReturnController {
         }
     }
     
+    public List<Return> getReturnsByUser(int userId) {
+        return returns.stream()
+                .filter(ret -> ret.getBorrowingId() != -1) // Ensure the borrowing exists
+                .collect(Collectors.toList());
+    }
+
+    
 
     public List<Return> getAllReturns() {
         return returns;

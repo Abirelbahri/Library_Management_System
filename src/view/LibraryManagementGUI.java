@@ -14,6 +14,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class LibraryManagementGUI extends JFrame {
     private JTable booksTable, usersTable, borrowingsTable, returnsTable;
@@ -123,6 +124,20 @@ public class LibraryManagementGUI extends JFrame {
         String[] columns = {"ID", "Title", "Author", "Year", "Genre"};
         booksTableModel = new DefaultTableModel(columns, 0);
         booksTable = new JTable(booksTableModel);
+        
+        // Add Search Bar
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JTextField searchField = new JTextField();
+        searchField.setPreferredSize(new Dimension(200, 40));
+        JButton searchButton = createStyledButton("Search");
+
+        searchButton.addActionListener(e -> searchBooks(searchField.getText()));
+
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
+
+        booksPanel.add(searchPanel, BorderLayout.NORTH);
+        
         booksPanel.add(new JScrollPane(booksTable), BorderLayout.CENTER);
 
         JPanel buttonPanel = new JPanel();
@@ -132,23 +147,23 @@ public class LibraryManagementGUI extends JFrame {
         JButton deleteButton = createStyledButton("Delete Book");
         JButton modifyButton = createStyledButton("Modify Book");
         JButton refreshButton = createStyledButton("Refresh");
-        JButton searchButton = createStyledButton("Search");
+
 
         addButton.addActionListener(e -> showAddBookDialog());
         deleteButton.addActionListener(e -> deleteSelectedBook());
         modifyButton.addActionListener(e -> showModifyBookDialog());
         refreshButton.addActionListener(e -> loadBookList());
-        searchButton.addActionListener(e -> showSearchBookDialog());
+
 
         buttonPanel.add(addButton);
         buttonPanel.add(deleteButton);
         buttonPanel.add(modifyButton);
         buttonPanel.add(refreshButton);
-        buttonPanel.add(searchButton);
 
         booksPanel.add(buttonPanel, BorderLayout.SOUTH);
         mainPanel.add(booksPanel, "BOOKS");
     }
+    
 
 	private void initializeUsersPanel() {
         JPanel usersPanel = new JPanel(new BorderLayout());
@@ -156,6 +171,20 @@ public class LibraryManagementGUI extends JFrame {
         String[] columns = {"ID", "Name", "Email", "Role"};
         usersTableModel = new DefaultTableModel(columns, 0);
         usersTable = new JTable(usersTableModel);
+        
+        // Add Search Bar
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JTextField searchField = new JTextField();
+        searchField.setPreferredSize(new Dimension(200, 40));
+        JButton searchButton = createStyledButton("Search");
+
+        searchButton.addActionListener(e -> searchUsers(searchField.getText()));
+
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
+
+        usersPanel.add(searchPanel, BorderLayout.NORTH);
+        
         usersPanel.add(new JScrollPane(usersTable), BorderLayout.CENTER);
 
         JPanel buttonPanel = new JPanel();
@@ -165,19 +194,19 @@ public class LibraryManagementGUI extends JFrame {
         JButton deleteButton = createStyledButton("Delete User");
         JButton modifyButton = createStyledButton("Modify User");
         JButton refreshButton = createStyledButton("Refresh");
-        JButton searchButton = createStyledButton("Search");
+        JButton viewHistoryButton = createStyledButton("View History");
 
         addButton.addActionListener(e -> showAddUserDialog());
         deleteButton.addActionListener(e -> deleteSelectedUser());
         modifyButton.addActionListener(e -> showModifyUserDialog());
         refreshButton.addActionListener(e -> loadUserList());
-        searchButton.addActionListener(e -> showSearchUserDialog());
-
+        viewHistoryButton.addActionListener(e -> showUserHistoryDialog());
+        
         buttonPanel.add(addButton);
         buttonPanel.add(deleteButton);
         buttonPanel.add(modifyButton);
+        buttonPanel.add(viewHistoryButton);
         buttonPanel.add(refreshButton);
-        buttonPanel.add(searchButton);
 
         usersPanel.add(buttonPanel, BorderLayout.SOUTH);
         mainPanel.add(usersPanel, "USERS");
@@ -185,6 +214,22 @@ public class LibraryManagementGUI extends JFrame {
 
 	private void initializeBorrowingsPanel() {
 	    JPanel borrowingsPanel = new JPanel(new BorderLayout());
+	    
+	    JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JTextField searchField = new JTextField();
+        searchField.setPreferredSize(new Dimension(200, 40));
+        JButton searchButton = createStyledButton("Search");
+
+        searchButton.addActionListener(e -> searchBorrowings(searchField.getText()));
+
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
+
+        borrowingsPanel.add(searchPanel, BorderLayout.NORTH);
+	    borrowingsPanel.add(new JScrollPane(borrowingsTable), BorderLayout.CENTER);
+
+	    JPanel buttonPanel = new JPanel();
+	    buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
 
 	    // Update columns to include User Name, Book Title, and Status
 	    String[] columns = {"ID", "User Name", "Book Title", "Borrow Date", "Due Date", "Status"};
@@ -193,21 +238,24 @@ public class LibraryManagementGUI extends JFrame {
 	    borrowingsPanel.add(new JScrollPane(borrowingsTable), BorderLayout.CENTER);
 
 	    // Buttons for Borrowings
-	    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+
 	    JButton addButton = createStyledButton("Add Borrowing");
 	    JButton deleteButton = createStyledButton("Delete Borrowing");
 	    JButton returnButton = createStyledButton("Mark as Returned");
+	    JButton extendButton = createStyledButton("Extend Due Date");
 	    JButton refreshButton = createStyledButton("Refresh");
-
+	    
 	    addButton.addActionListener(e -> showAddBorrowingDialog());
 	    deleteButton.addActionListener(e -> deleteSelectedBorrowing());
 	    returnButton.addActionListener(e -> markBorrowingAsReturned());
+	    extendButton.addActionListener(e -> showExtendBorrowingDialog());
 	    refreshButton.addActionListener(e -> loadBorrowingList());
-
+	    
 	    buttonPanel.add(addButton);
 	    buttonPanel.add(deleteButton);
 	    buttonPanel.add(returnButton);
 	    buttonPanel.add(refreshButton);
+	    buttonPanel.add(extendButton);
 
 	    borrowingsPanel.add(buttonPanel, BorderLayout.SOUTH);
 	    mainPanel.add(borrowingsPanel, "BORROWINGS");
@@ -217,13 +265,26 @@ public class LibraryManagementGUI extends JFrame {
 	private void initializeReturnsPanel() {
 	    JPanel returnsPanel = new JPanel(new BorderLayout());
 
-	    // Updated columns to match requirements
+	    
 	    String[] columns = {"Return ID", "Borrowing ID", "User Name", "Book Title", "Borrow Date", "Due Date", "Return Date", "Status", "Penalty"};
 	    returnsTableModel = new DefaultTableModel(columns, 0);
 	    returnsTable = new JTable(returnsTableModel);
+	    
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JTextField searchField = new JTextField();
+        searchField.setPreferredSize(new Dimension(200, 40));
+        JButton searchButton = createStyledButton("Search");
+
+        searchButton.addActionListener(e -> searchReturns(searchField.getText()));
+
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
+
+        returnsPanel.add(searchPanel, BorderLayout.NORTH);
+	    
 	    returnsPanel.add(new JScrollPane(returnsTable), BorderLayout.CENTER);
 
-	    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+	    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 	    JButton refreshButton = createStyledButton("Refresh");
 
 	    refreshButton.addActionListener(e -> loadReturnList());
@@ -444,6 +505,67 @@ public class LibraryManagementGUI extends JFrame {
         userController.deleteUser(userId);
         loadUserList();
     }
+    
+	
+	private void showUserHistoryDialog() {
+	    int selectedRow = usersTable.getSelectedRow();
+	    if (selectedRow == -1) {
+	        JOptionPane.showMessageDialog(this, "Please select a user to view history.");
+	        return;
+	    }
+
+	    int userId = (int) usersTableModel.getValueAt(selectedRow, 0);
+	    String userName = (String) usersTableModel.getValueAt(selectedRow, 1);
+
+	    // Fetch borrowing history
+	    List<Borrowing> borrowings = borrowingController.getBorrowingsByUser(userId);
+
+	    // Fetch return history
+	    List<Return> returns = returnController.getAllReturns().stream()
+	            .filter(ret -> ret.getUserName().equals(userName))
+	            .collect(Collectors.toList());
+
+	    // Display the combined history in a table
+	    showCombinedHistoryTable(userName, borrowings, returns);
+	}
+
+	private void showCombinedHistoryTable(String userName, List<Borrowing> borrowings, List<Return> returns) {
+	    JFrame historyFrame = new JFrame("History for " + userName);
+	    historyFrame.setSize(900, 500);
+	    historyFrame.setLocationRelativeTo(this);
+
+	    String[] columns = {"Book Title", "Date", "Due Date", "Return Date", "Status", "Penalty"};
+	    DefaultTableModel historyTableModel = new DefaultTableModel(columns, 0);
+	    JTable historyTable = new JTable(historyTableModel);
+
+	    // Add borrowing history
+	    for (Borrowing borrowing : borrowings) {
+	        historyTableModel.addRow(new Object[]{
+	                borrowing.getBookId(), // Ensure Borrowing stores or fetches book title
+	                borrowing.getBorrowDate(),
+	                borrowing.getDueDate(),
+	                "",
+	                borrowing.getStatus(),
+	                ""
+	        });
+	    }
+
+	    // Add return history
+	    for (Return ret : returns) {
+	        historyTableModel.addRow(new Object[]{
+	                ret.getBookTitle(),
+	                ret.getBorrowDate(),
+	                ret.getDueDate(),
+	                ret.getReturnDate(),
+	                ret.getStatus(),
+	                ret.getPenalty()
+	        });
+	    }
+
+	    historyFrame.add(new JScrollPane(historyTable));
+	    historyFrame.setVisible(true);
+	}
+
 
     private void showAddBorrowingDialog() {
         JPanel panel = new JPanel(new GridLayout(5, 2));
@@ -546,6 +668,40 @@ public class LibraryManagementGUI extends JFrame {
         borrowingController.deleteBorrowing(borrowingId);
         loadBorrowingList();
     }
+    
+    private void showExtendBorrowingDialog() {
+        int selectedRow = borrowingsTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a borrowing to extend.");
+            return;
+        }
+
+        // Retrieve the borrowing ID
+        int borrowingId = (int) borrowingsTableModel.getValueAt(selectedRow, 0);
+        Borrowing borrowing = borrowingController.getBorrowingById(borrowingId);
+
+        if (borrowing == null) {
+            JOptionPane.showMessageDialog(this, "Borrowing not found.");
+            return;
+        }
+
+        String newDueDate = JOptionPane.showInputDialog(this, "Enter New Due Date (YYYY-MM-DD):", borrowing.getDueDate());
+        if (newDueDate == null || newDueDate.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Invalid due date.");
+            return;
+        }
+
+        try {
+            borrowingController.extendDueDate(borrowingId, newDueDate); // Update the due date
+            loadBorrowingList(); 
+            JOptionPane.showMessageDialog(this, "Due date extended successfully.");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "An error occurred: " + e.getMessage());
+        }
+    }
+
+    
+    
 
     private void showAddReturnDialog() {
         JPanel panel = new JPanel(new GridLayout(2, 2));
@@ -658,6 +814,90 @@ public class LibraryManagementGUI extends JFrame {
             });
         }
     }
+    
+    // Search
+    private void searchBooks(String query) {
+        String lowerCaseQuery = query.toLowerCase();
+        List<Book> filteredBooks = bookController.getAllBooks().stream()
+                .filter(book -> book.getTitle().toLowerCase().contains(lowerCaseQuery) ||
+                               book.getAuthor().toLowerCase().contains(lowerCaseQuery) ||
+                               String.valueOf(book.getPublicationYear()).contains(lowerCaseQuery) ||
+                               book.getGenre().toLowerCase().contains(lowerCaseQuery))
+                .collect(Collectors.toList());
+
+        booksTableModel.setRowCount(0);
+        for (Book book : filteredBooks) {
+            booksTableModel.addRow(new Object[]{book.getId(), book.getTitle(), book.getAuthor(), book.getPublicationYear(), book.getGenre()});
+        }
+    }
+    
+    private void searchUsers(String query) {
+        String lowerCaseQuery = query.toLowerCase();
+        List<User> filteredUsers = userController.getAllUsers().stream()
+                .filter(user -> user.getName().toLowerCase().contains(lowerCaseQuery) ||
+                               user.getEmail().toLowerCase().contains(lowerCaseQuery) ||
+                               user.getRole().toLowerCase().contains(lowerCaseQuery))
+                .collect(Collectors.toList());
+
+        usersTableModel.setRowCount(0);
+        for (User user : filteredUsers) {
+            usersTableModel.addRow(new Object[]{user.getId(), user.getName(), user.getEmail(), user.getRole()});
+        }
+    }
+
+     private void searchBorrowings(String query) {
+         String lowerCaseQuery = query.toLowerCase();
+         List<Borrowing> filteredBorrowings = borrowingController.getAllBorrowings().stream()
+                 .filter(borrowing -> String.valueOf(borrowing.getId()).contains(lowerCaseQuery) ||
+                                      userController.getUserById(borrowing.getUserId()).getName().toLowerCase().contains(lowerCaseQuery) ||
+                                      bookController.getBookById(borrowing.getBookId()).getTitle().toLowerCase().contains(lowerCaseQuery) ||
+                                      borrowing.getBorrowDate().toLowerCase().contains(lowerCaseQuery) ||
+                                      borrowing.getDueDate().toLowerCase().contains(lowerCaseQuery) ||
+                                      borrowing.getStatus().toLowerCase().contains(lowerCaseQuery))
+                 .collect(Collectors.toList());
+
+         borrowingsTableModel.setRowCount(0);
+         for (Borrowing borrowing : filteredBorrowings) {
+             String userName = userController.getUserById(borrowing.getUserId()).getName();
+             String bookTitle = bookController.getBookById(borrowing.getBookId()).getTitle();
+             borrowingsTableModel.addRow(new Object[]{
+                     borrowing.getId(), userName, bookTitle, borrowing.getBorrowDate(), borrowing.getDueDate(), borrowing.getStatus()
+             });
+         }
+     }
+
+     private void searchReturns(String query) {
+    	    String lowerCaseQuery = query.toLowerCase();
+
+    	    List<Return> filteredReturns = returnController.getAllReturns().stream()
+    	            .filter(ret -> 
+    	                String.valueOf(ret.getId()).contains(lowerCaseQuery) ||
+    	                String.valueOf(ret.getBorrowingId()).contains(lowerCaseQuery) ||
+    	                ret.getUserName().toLowerCase().contains(lowerCaseQuery) ||
+    	                ret.getBookTitle().toLowerCase().contains(lowerCaseQuery) ||
+    	                ret.getBorrowDate().toLowerCase().contains(lowerCaseQuery) ||
+    	                ret.getDueDate().toLowerCase().contains(lowerCaseQuery) ||
+    	                ret.getReturnDate().toLowerCase().contains(lowerCaseQuery) ||
+    	                ret.getStatus().toLowerCase().contains(lowerCaseQuery) ||
+    	                String.valueOf(ret.getPenalty()).contains(lowerCaseQuery)
+    	            )
+    	            .collect(Collectors.toList());
+
+    	    returnsTableModel.setRowCount(0);
+    	    for (Return ret : filteredReturns) {
+    	        returnsTableModel.addRow(new Object[]{
+    	                ret.getId(),
+    	                ret.getBorrowingId(),
+    	                ret.getUserName(),
+    	                ret.getBookTitle(),
+    	                ret.getBorrowDate(),
+    	                ret.getDueDate(),
+    	                ret.getReturnDate(),
+    	                ret.getStatus(),
+    	                ret.getPenalty()
+    	        });
+    	    }
+    	}
 
 
 

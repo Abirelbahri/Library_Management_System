@@ -84,6 +84,7 @@ public class BorrowingController {
         }
     }
 
+
     public List<Borrowing> searchBorrowings(String searchTerm) {
         return borrowings.stream()
                 .filter(borrowing -> borrowing.getBorrowDate().toLowerCase().contains(searchTerm.toLowerCase()) ||
@@ -109,6 +110,23 @@ public class BorrowingController {
             borrowings.remove(borrowing);
             saveBorrowingsToCSV();
         }
+    }
+    
+    public void extendDueDate(int borrowingId, String newDueDate) {
+        Borrowing borrowing = getBorrowingById(borrowingId);
+        if (borrowing != null) {
+            borrowing.setDueDate(newDueDate);
+            saveBorrowingsToCSV(); 
+        } else {
+            throw new IllegalArgumentException("Borrowing not found with ID: " + borrowingId);
+        }
+    }
+
+    
+    public List<Borrowing> getBorrowingsByUser(int userId) {
+        return borrowings.stream()
+                .filter(borrowing -> borrowing.getUserId() == userId)
+                .collect(Collectors.toList());
     }
 
 
