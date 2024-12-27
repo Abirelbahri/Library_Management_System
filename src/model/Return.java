@@ -3,49 +3,83 @@ package model;
 public class Return {
     private static int idCounter = 1;
     private int id;
-    private Borrowing borrowing;
+    private int borrowingId;
+    private String userName;
+    private String bookTitle;
+    private String borrowDate;
+    private String dueDate;
     private String returnDate;
+    private String status;
     private double penalty;
 
-    // Constructor
-    public Return(Borrowing borrowing, String returnDate) {
-        this.id = idCounter++; 
-        this.borrowing = borrowing;
+    // Constructor for creating new returns
+    public Return(int borrowingId, String userName, String bookTitle, String borrowDate, String dueDate, String returnDate, String status, double penalty) {
+        this.id = idCounter++;
+        this.borrowingId = borrowingId;
+        this.userName = userName;
+        this.bookTitle = bookTitle;
+        this.borrowDate = borrowDate;
+        this.dueDate = dueDate;
         this.returnDate = returnDate;
-        this.penalty = calculatePenalty();
+        this.status = status;
+        this.penalty = penalty;
     }
 
-    // Getters and Setters
+    // Constructor for loading from CSV (with ID passed)
+    public Return(int id, int borrowingId, String userName, String bookTitle, String borrowDate, String dueDate, String returnDate, String status, double penalty) {
+        this.id = id;
+        this.borrowingId = borrowingId;
+        this.userName = userName;
+        this.bookTitle = bookTitle;
+        this.borrowDate = borrowDate;
+        this.dueDate = dueDate;
+        this.returnDate = returnDate;
+        this.status = status;
+        this.penalty = penalty;
+    }
+
+    public static void setIdCounter(int newCounter) {
+        idCounter = newCounter;
+    }
+
     public int getId() {
         return id;
     }
 
-    public Borrowing getBorrowing() {
-        return borrowing;
+    public int getBorrowingId() {
+        return borrowingId;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public String getBookTitle() {
+        return bookTitle;
+    }
+
+    public String getBorrowDate() {
+        return borrowDate;
+    }
+
+    public String getDueDate() {
+        return dueDate;
     }
 
     public String getReturnDate() {
         return returnDate;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
     public double getPenalty() {
         return penalty;
     }
 
-    private double calculatePenalty() {
-        // For simplicity,the penalty is calculated based on overdue days
-        long diff = Long.parseLong(returnDate) - Long.parseLong(borrowing.getDueDate());
-        long daysLate = diff / (1000 * 60 * 60 * 24); 
-        
-        if (daysLate > 0) {
-            return daysLate * 1.0;
-        }
-        return 0;
-    }
-
     @Override
     public String toString() {
-        return id + "," + borrowing.getId() + "," + returnDate + "," + penalty;
+        return id + "," + borrowingId + "," + userName + "," + bookTitle + "," + borrowDate + "," + dueDate + "," + returnDate + "," + status + "," + penalty;
     }
 }
-

@@ -1,45 +1,79 @@
 package controller;
 
 import model.User;
+import utils.CSVUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class UserController {
-    private List<User> users = new ArrayList<>();
+    private List<User> users;
+    private String filePath;
 
-    // Register a new user with personal information and role
+    public UserController(String filePath) {
+        this.filePath = filePath;
+        this.users = loadUsersFromCSV();
+        
+        if (!users.isEmpty()) {
+            int maxId = users.stream().mapToInt(User::getId).max().orElse(1);
+            User.setIdCounter(maxId + 1);
+        }
+    }
+
+    private List<User> loadUsersFromCSV() {
+        List<User> userList = new ArrayList<>();
+        List<String[]> data = CSVUtils.readFromCSV(filePath);
+        for (String[] row : data) {
+            try {
+                int id = Integer.parseInt(row[0]);
+                String name = row[1];
+                String email = row[2];
+                String role = row[3];
+                userList.add(new User(id, name, email, role));
+            } catch (NumberFormatException e) {
+                e.printStackTrace();
+            }
+        }
+        return userList;
+    }
+
+    private void saveUsersToCSV() {
+        List<String[]> data = users.stream()
+                .map(user -> new String[]{
+                        String.valueOf(user.getId()),
+                        user.getName(),
+                        user.getEmail(),
+                        user.getRole()
+                })
+                .collect(Collectors.toList());
+        CSVUtils.writeToCSV(filePath, data);
+    }
+
     public void registerUser(String name, String email, String role) {
         User newUser = new User(name, email, role);
         users.add(newUser);
-        System.out.println("User registered: " + newUser);
+        saveUsersToCSV();
     }
 
-    // Modify an existing user's information by ID
     public void modifyUser(int id, String name, String email, String role) {
         User user = getUserById(id);
         if (user != null) {
             user.setName(name);
             user.setEmail(email);
             user.setRole(role);
-            System.out.println("User modified: " + user);
-        } else {
-            System.out.println("User with ID " + id + " not found.");
+            saveUsersToCSV();
         }
     }
 
-    // Delete a user by ID
     public void deleteUser(int id) {
         User user = getUserById(id);
         if (user != null) {
             users.remove(user);
-            System.out.println("User deleted: " + user);
-        } else {
-            System.out.println("User with ID " + id + " not found.");
+            saveUsersToCSV();
         }
     }
 
-    // Search for users by name, email, or role (supports partial matching)
     public List<User> searchUsers(String searchTerm) {
         return users.stream()
                 .filter(user -> user.getName().toLowerCase().contains(searchTerm.toLowerCase()) ||
@@ -48,23 +82,16 @@ public class UserController {
                 .collect(Collectors.toList());
     }
 
-    // Filter users by role
     public List<User> filterUsersByRole(String role) {
         return users.stream()
-                .filter(user -> user.getRole().toLowerCase().equals(role.toLowerCase()))
+                .filter(user -> user.getRole().equalsIgnoreCase(role))
                 .collect(Collectors.toList());
     }
 
-    // List all users
     public void listUsers() {
-        if (users.isEmpty()) {
-            System.out.println("No users available.");
-        } else {
-            users.forEach(System.out::println);
-        }
+        users.forEach(System.out::println);
     }
 
-    // Get a user by their ID
     public User getUserById(int id) {
         return users.stream()
                 .filter(user -> user.getId() == id)
@@ -72,7 +99,6 @@ public class UserController {
                 .orElse(null);
     }
 
-    // Get all users (for testing or external use)
     public List<User> getAllUsers() {
         return users;
     }

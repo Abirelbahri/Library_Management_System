@@ -1,75 +1,143 @@
 package controller;
 
 import model.Return;
-import model.Borrowing;
-import model.User;
 import model.Book;
+import model.Borrowing;
+
+import model.Return;
+import model.Borrowing;
+import utils.CSVUtils;
+
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class ReturnController {
-    private List<Return> returns = new ArrayList<>();
+    private List<Return> returns;
+    private String filePath;
 
-    // Register a return with the actual return date
-    public void registerReturn(Borrowing borrowing, String returnDate) {
-        Return newReturn = new Return(borrowing, returnDate);
-        returns.add(newReturn);
-        System.out.println("Book returned: " + newReturn);
-    }
-
-    // List all returns
-    public void listReturns() {
-        if (returns.isEmpty()) {
-            System.out.println("No returns found.");
-        } else {
-            returns.forEach(System.out::println);
+    public ReturnController(String filePath) {
+        this.filePath = filePath;
+        this.returns = loadReturnsFromCSV();
+        
+        if (!returns.isEmpty()) {
+            int maxId = returns.stream().mapToInt(Return::getId).max().orElse(1);
+            Return.setIdCounter(maxId + 1);
         }
     }
 
-    // Get return history by user
-    public void viewReturnHistory(User user) {
-        System.out.println("Return history for user " + user.getName() + ":");
-        returns.stream()
-                .filter(ret -> ret.getBorrowing().getUserId() == user.getId())
-                .forEach(System.out::println);
+    private List<Return> loadReturnsFromCSV() {
+        List<Return> returnList = new ArrayList<>();
+        List<String[]> data = CSVUtils.readFromCSV(filePath);
+
+        for (String[] row : data) {
+            try {
+                int id = Integer.parseInt(row[0]);
+                int borrowingId = Integer.parseInt(row[1]);
+                String userName = row[2];
+                String bookTitle = row[3];
+                String borrowDate = row[4];
+                String dueDate = row[5];
+                String returnDate = row[6];
+                String status = row[7];
+                double penalty = Double.parseDouble(row[8]);
+                returnList.add(new Return(id, borrowingId, userName, bookTitle, borrowDate, dueDate, returnDate, status, penalty));
+            } catch (NumberFormatException e) {
+                e.printStackTrace();
+            }
+        }
+        return returnList;
     }
 
-    // Search returns by book title, user name, or return date
-    public List<Return> searchReturns(String searchTerm) {
-        return returns.stream()
-                .filter(ret -> {
-                    Book book = getBookById(ret.getBorrowing().getBookId());
-                    User user = getUserById(ret.getBorrowing().getUserId());
-                    return (book != null && book.getTitle().toLowerCase().contains(searchTerm.toLowerCase())) ||
-                           (user != null && user.getName().toLowerCase().contains(searchTerm.toLowerCase())) ||
-                           ret.getReturnDate().toLowerCase().contains(searchTerm.toLowerCase());
+    
+    public void registerReturn(Return ret) {
+        returns.add(ret);
+        saveReturnsToCSV();
+    }
+    
+    
+    public void registerReturnWithPenalty(Borrowing borrowing, String returnDate, UserController userController, BookController bookController) {
+        // Calculate penalty if the return date is after the due date
+        double penalty = 0.0;
+        java.time.LocalDate dueDate = java.time.LocalDate.parse(borrowing.getDueDate());
+        java.time.LocalDate actualReturnDate = java.time.LocalDate.parse(returnDate);
+
+        if (actualReturnDate.isAfter(dueDate)) {
+            long daysLate = java.time.temporal.ChronoUnit.DAYS.between(dueDate, actualReturnDate);
+            penalty = daysLate * 1.0; // Assuming $1/day penalty
+        }
+
+        // Fetch user name and book title
+        String userName = userController.getUserById(borrowing.getUserId()).getName();
+        String bookTitle = bookController.getBookById(borrowing.getBookId()).getTitle();
+
+        // Register the return
+        Return ret = new Return(
+                borrowing.getId(),
+                userName,
+                bookTitle,
+                borrowing.getBorrowDate(),
+                borrowing.getDueDate(),
+                returnDate,
+                "Returned",
+                penalty
+        );
+        registerReturn(ret);
+    }
+
+
+
+
+    private void saveReturnsToCSV() {
+        List<String[]> data = returns.stream()
+                .map(ret -> new String[]{
+                        String.valueOf(ret.getId()),
+                        String.valueOf(ret.getBorrowingId()),
+                        ret.getUserName(),
+                        ret.getBookTitle(),
+                        ret.getBorrowDate(),
+                        ret.getDueDate(),
+                        ret.getReturnDate(),
+                        ret.getStatus(),
+                        String.valueOf(ret.getPenalty())
                 })
                 .collect(Collectors.toList());
+        CSVUtils.writeToCSV(filePath, data);
     }
+    
 
-    // Filter returns by due date
-    public List<Return> filterReturnsByDueDate(String dueDate) {
+    public List<Return> searchReturns(String searchTerm) {
         return returns.stream()
-                .filter(ret -> ret.getBorrowing().getDueDate().equals(dueDate))
+                .filter(ret -> ret.getReturnDate().toLowerCase().contains(searchTerm.toLowerCase()) ||
+                                String.valueOf(ret.getBorrowingId()).contains(searchTerm))
                 .collect(Collectors.toList());
     }
 
-    // Get all returns (for testing or external use)
+    public void listReturns() {
+        returns.forEach(System.out::println);
+    }
+
+    public Return getReturnById(int id) {
+        return returns.stream()
+                .filter(ret -> ret.getId() == id)
+                .findFirst()
+                .orElse(null);
+    }
+    
+    public void deleteReturn(int returnId) {
+        Return returnRecord = getReturnById(returnId);
+        if (returnRecord != null) {
+            returns.remove(returnRecord);
+            saveReturnsToCSV();
+        } else {
+            System.err.println("Return ID not found.");
+        }
+    }
+    
+
     public List<Return> getAllReturns() {
         return returns;
     }
-
-    // Helper method to get book by ID (for searching/filtering)
-    private Book getBookById(int bookId) {
-        // Assume BookController is initialized somewhere in the program and has a method to get books by ID
-        return new BookController().getBookById(bookId);  // Assuming you have a BookController with this method
-    }
-
-    // Helper method to get user by ID (for searching/filtering)
-    private User getUserById(int userId) {
-        // Assume UserController is initialized somewhere in the program and has a method to get users by ID
-        return new UserController().getUserById(userId);  // Assuming you have a UserController with this method
-    }
 }
-

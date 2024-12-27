@@ -10,6 +10,14 @@ public class User {
     // Constructor
     public User(String name, String email, String role) {
         this.id = idCounter++;  
+        this.name= name;
+        this.email = email;
+        this.role = role;
+    }
+    
+ // Constructor for CSV reading (with ID passed)
+    public User(int id, String name, String email, String role) {
+        this.id = id;
         this.name = name;
         this.email = email;
         this.role = role;
@@ -19,7 +27,9 @@ public class User {
     public int getId() {
         return id;
     }
-
+    public static void setIdCounter(int newIdCounter) {
+        idCounter = newIdCounter;
+    }
     public String getName() {
         return name;
     }

@@ -1,21 +1,63 @@
 package controller;
 
 import model.Book;
+import utils.CSVUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class BookController {
-    private List<Book> books = new ArrayList<>();
+    private List<Book> books;
+    private String filePath;
 
-    // Add a new book with details such as title, author, publication year, and genre
+    public BookController(String filePath) {
+        this.filePath = filePath;
+        this.books = loadBooksFromCSV();
+        
+        if (!books.isEmpty()) {
+            int maxId = books.stream().mapToInt(Book::getId).max().orElse(1);
+            Book.setIdCounter(maxId + 1);
+        }
+    }
+
+    private List<Book> loadBooksFromCSV() {
+        List<Book> bookList = new ArrayList<>();
+        List<String[]> data = CSVUtils.readFromCSV(filePath);
+        for (String[] row : data) {
+            try {
+                int id = Integer.parseInt(row[0]);
+                String title = row[1];
+                String author = row[2];
+                int publicationYear = Integer.parseInt(row[3]);
+                String genre = row[4];
+                bookList.add(new Book(id, title, author, publicationYear, genre));
+            } catch (NumberFormatException e) {
+                e.printStackTrace();
+            }
+        }
+        return bookList;
+    }
+
+    private void saveBooksToCSV() {
+        List<String[]> data = books.stream()
+                .map(book -> new String[]{
+                        String.valueOf(book.getId()),
+                        book.getTitle(),
+                        book.getAuthor(),
+                        String.valueOf(book.getPublicationYear()),
+                        book.getGenre()
+                })
+                .collect(Collectors.toList());
+        CSVUtils.writeToCSV(filePath, data);
+    }
+
     public void addBook(String title, String author, int publicationYear, String genre) {
         Book newBook = new Book(title, author, publicationYear, genre);
         books.add(newBook);
-        System.out.println("Book added: " + newBook);
+        saveBooksToCSV();
     }
 
-    // Modify an existing book's information by its ID
     public void modifyBook(int id, String title, String author, int publicationYear, String genre) {
         Book book = getBookById(id);
         if (book != null) {
@@ -23,24 +65,18 @@ public class BookController {
             book.setAuthor(author);
             book.setPublicationYear(publicationYear);
             book.setGenre(genre);
-            System.out.println("Book modified: " + book);
-        } else {
-            System.out.println("Book with ID " + id + " not found.");
+            saveBooksToCSV();
         }
     }
 
-    // Delete a book from the library by its ID
     public void deleteBook(int id) {
         Book book = getBookById(id);
         if (book != null) {
             books.remove(book);
-            System.out.println("Book deleted: " + book);
-        } else {
-            System.out.println("Book with ID " + id + " not found.");
+            saveBooksToCSV();
         }
     }
 
-    // Search for books by title, author, or genre (supports partial matching)
     public List<Book> searchBooks(String searchTerm) {
         return books.stream()
                 .filter(book -> book.getTitle().toLowerCase().contains(searchTerm.toLowerCase()) || 
@@ -49,23 +85,16 @@ public class BookController {
                 .collect(Collectors.toList());
     }
 
-    // Filter books by publication year
     public List<Book> filterBooksByYear(int year) {
         return books.stream()
                 .filter(book -> book.getPublicationYear() == year)
                 .collect(Collectors.toList());
     }
 
-    // List all books
     public void listBooks() {
-        if (books.isEmpty()) {
-            System.out.println("No books available.");
-        } else {
-            books.forEach(System.out::println);
-        }
+        books.forEach(System.out::println);
     }
 
-    // Get a book by its ID
     public Book getBookById(int id) {
         return books.stream()
                 .filter(book -> book.getId() == id)
@@ -73,7 +102,6 @@ public class BookController {
                 .orElse(null);
     }
 
-    // Get all books (for testing or external use)
     public List<Book> getAllBooks() {
         return books;
     }

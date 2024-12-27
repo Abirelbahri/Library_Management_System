@@ -1,92 +1,118 @@
 package controller;
 
 import model.Borrowing;
-import model.Book;
-import model.User;
+import utils.CSVUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class BorrowingController {
-    private List<Borrowing> borrowings = new ArrayList<>();
+    private List<Borrowing> borrowings;
+    private String filePath;
 
-    // Register a new borrowing
-    public void borrowBook(Book book, User user, String borrowDate, String dueDate) {
-        Borrowing newBorrowing = new Borrowing(user.getId(), book.getId(), borrowDate, dueDate);
-        borrowings.add(newBorrowing);
-        System.out.println("Book borrowed: " + newBorrowing);
-    }
-
-    // List all borrowings
-    public void listBorrowings() {
-        if (borrowings.isEmpty()) {
-            System.out.println("No borrowings found.");
-        } else {
-            borrowings.forEach(System.out::println);
+    public BorrowingController(String filePath) {
+        this.filePath = filePath;
+        this.borrowings = loadBorrowingsFromCSV();
+        
+        if (!borrowings.isEmpty()) {
+            int maxId = borrowings.stream().mapToInt(Borrowing::getId).max().orElse(1);
+            Borrowing.setIdCounter(maxId + 1);
         }
     }
 
-    // Get the borrowing history of a specific user by their ID
-    public void viewBorrowingHistory(User user) {
-        System.out.println("Borrowing history for user " + user.getName() + ":");
-        borrowings.stream()
-                .filter(borrowing -> borrowing.getUserId() == user.getId())
-                .forEach(System.out::println);
+    private List<Borrowing> loadBorrowingsFromCSV() {
+        List<Borrowing> borrowingList = new ArrayList<>();
+        List<String[]> data = CSVUtils.readFromCSV(filePath);
+        for (String[] row : data) {
+            try {
+                int id = Integer.parseInt(row[0]);
+                int userId = Integer.parseInt(row[1]);
+                int bookId = Integer.parseInt(row[2]);
+                String borrowDate = row[3];
+                String dueDate = row[4];
+                String status = row[5];
+                borrowingList.add(new Borrowing(id, userId, bookId, borrowDate, dueDate, status));
+            } catch (NumberFormatException e) {
+                e.printStackTrace();
+            }
+        }
+        return borrowingList;
+    }
+    
+    public void markAsReturned(int borrowingId) {
+        Borrowing borrowing = getBorrowingById(borrowingId);
+        if (borrowing != null) {
+            borrowing.setStatus("Returned");
+            saveBorrowingsToCSV();
+        }
     }
 
-    // Extend the borrowing period for a specific borrowing by ID
+    private void saveBorrowingsToCSV() {
+        List<String[]> data = borrowings.stream()
+                .map(borrowing -> new String[]{
+                        String.valueOf(borrowing.getId()),
+                        String.valueOf(borrowing.getUserId()),
+                        String.valueOf(borrowing.getBookId()),
+                        borrowing.getBorrowDate(),
+                        borrowing.getDueDate(),
+                        borrowing.getStatus()
+                })
+                .collect(Collectors.toList());
+        CSVUtils.writeToCSV(filePath, data);
+    }
+
+    public void borrowBook(int userId, int bookId, String borrowDate, String dueDate,String status) {
+        Borrowing newBorrowing = new Borrowing(userId, bookId, borrowDate, dueDate,"Not Returned");
+        borrowings.add(newBorrowing);
+        saveBorrowingsToCSV();
+    }
+
     public void extendBorrowing(int id, String newDueDate) {
         Borrowing borrowing = getBorrowingById(id);
         if (borrowing != null) {
             borrowing.setDueDate(newDueDate);
-            System.out.println("Borrowing extended: " + borrowing);
-        } else {
-            System.out.println("Borrowing with ID " + id + " not found.");
+            saveBorrowingsToCSV();
+        }
+    }
+    
+    public void removeBorrowing(int borrowingId) {
+        Borrowing borrowing = getBorrowingById(borrowingId);
+        if (borrowing != null) {
+            borrowings.remove(borrowing);
+            saveBorrowingsToCSV();
         }
     }
 
-    // Search borrowings by book title, user name, or borrow date
     public List<Borrowing> searchBorrowings(String searchTerm) {
         return borrowings.stream()
-                .filter(borrowing -> {
-                    Book book = getBookById(borrowing.getBookId());
-                    User user = getUserById(borrowing.getUserId());
-                    return book != null && book.getTitle().toLowerCase().contains(searchTerm.toLowerCase()) ||
-                           user != null && user.getName().toLowerCase().contains(searchTerm.toLowerCase()) ||
-                           borrowing.getBorrowDate().toLowerCase().contains(searchTerm.toLowerCase());
-                })
+                .filter(borrowing -> borrowing.getBorrowDate().toLowerCase().contains(searchTerm.toLowerCase()) ||
+                                String.valueOf(borrowing.getUserId()).contains(searchTerm) ||
+                                String.valueOf(borrowing.getBookId()).contains(searchTerm))
                 .collect(Collectors.toList());
     }
 
-    // Filter borrowings by due date
-    public List<Borrowing> filterBorrowingsByDueDate(String dueDate) {
-        return borrowings.stream()
-                .filter(borrowing -> borrowing.getDueDate().equals(dueDate))
-                .collect(Collectors.toList());
+    public void listBorrowings() {
+        borrowings.forEach(System.out::println);
     }
 
-    // Get a borrowing by its ID
     public Borrowing getBorrowingById(int id) {
         return borrowings.stream()
                 .filter(borrowing -> borrowing.getId() == id)
                 .findFirst()
                 .orElse(null);
     }
+    
+    public void deleteBorrowing(int borrowingId) {
+        Borrowing borrowing = getBorrowingById(borrowingId);
+        if (borrowing != null) {
+            borrowings.remove(borrowing);
+            saveBorrowingsToCSV();
+        }
+    }
 
-    // Get all borrowings (for testing or external use)
+
     public List<Borrowing> getAllBorrowings() {
         return borrowings;
-    }
-
-    // Helper method to get book by ID (for searching/filtering)
-    private Book getBookById(int bookId) {
-        // Assume BookController is initialized somewhere in the program and has a method to get books by ID
-        return new BookController().getBookById(bookId);  // Assuming you have a BookController with this method
-    }
-
-    // Helper method to get user by ID (for searching/filtering)
-    private User getUserById(int userId) {
-        // Assume UserController is initialized somewhere in the program and has a method to get users by ID
-        return new UserController().getUserById(userId);  // Assuming you have a UserController with this method
     }
 }
