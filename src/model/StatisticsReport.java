@@ -1,46 +1,37 @@
 package model;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import controller.BookController;
-import controller.UserController;
-
 public class StatisticsReport {
+    private String reportName;
+    private String description;
+    private int value;
 
-    // Method to get the most borrowed books
-    public Map<String, Integer> getMostBorrowedBooks(List<Borrowing> borrowings, BookController bookController) {
-        Map<String, Integer> bookCount = new HashMap<>();
-        for (Borrowing borrowing : borrowings) {
-            Book book = bookController.getBookById(borrowing.getBookId());
-            if (book != null) {
-                String bookTitle = book.getTitle();
-                bookCount.put(bookTitle, bookCount.getOrDefault(bookTitle, 0) + 1);
-            }
-        }
-        return bookCount;
+    public StatisticsReport(String reportName, String description, int value) {
+        this.reportName = reportName;
+        this.description = description;
+        this.value = value;
     }
 
-    // Method to get the most active users
-    public Map<String, Integer> getMostActiveUsers(List<Borrowing> borrowings, UserController userController) {
-        Map<String, Integer> userCount = new HashMap<>();
-        for (Borrowing borrowing : borrowings) {
-            User user = userController.getUserById(borrowing.getUserId());
-            if (user != null) {
-                String userName = user.getName();
-                userCount.put(userName, userCount.getOrDefault(userName, 0) + 1);
-            }
-        }
-        return userCount;
+    public String getReportName() {
+        return reportName;
     }
 
-    // Method to generate general statistics about the library
-    public void generateGeneralStatistics(List<Book> books, List<User> users, List<Borrowing> borrowings) {
-        System.out.println("Library Statistics:");
-        System.out.println("Total Books: " + books.size());
-        System.out.println("Total Users: " + users.size());
-        System.out.println("Total Borrowings: " + borrowings.size());
+    public void setReportName(String reportName) {
+        this.reportName = reportName;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public int getValue() {
+        return value;
+    }
+
+    public void setValue(int value) {
+        this.value = value;
     }
 }
-

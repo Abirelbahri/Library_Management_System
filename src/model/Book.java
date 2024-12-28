@@ -1,6 +1,5 @@
 package model;
 
-import java.time.LocalDate;
 
 /**
  * The {@code Book} class represents a book entity in the library system.

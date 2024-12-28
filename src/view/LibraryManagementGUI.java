@@ -1,24 +1,18 @@
 package view;
 
-import controller.BookController;
-import controller.UserController;
-import controller.BorrowingController;
-import controller.ReturnController;
-import model.Book;
-import model.User;
-import model.Borrowing;
-import model.Return;
+import controller.*;
+import model.*;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class LibraryManagementGUI extends JFrame {
     private JTable booksTable, usersTable, borrowingsTable, returnsTable;
     private DefaultTableModel booksTableModel, usersTableModel, borrowingsTableModel, returnsTableModel;
+
     private JPanel mainPanel;
     private CardLayout cardLayout;
 
@@ -27,6 +21,7 @@ public class LibraryManagementGUI extends JFrame {
     private BorrowingController borrowingController;
     private ReturnController returnController;
 
+    
     public LibraryManagementGUI() {
         setTitle("Library Management System");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -51,6 +46,7 @@ public class LibraryManagementGUI extends JFrame {
         initializeUsersPanel();
         initializeBorrowingsPanel();
         initializeReturnsPanel();
+        initializeStatisticsPanel();
 
         container.add(mainPanel, BorderLayout.CENTER);
 
@@ -61,6 +57,7 @@ public class LibraryManagementGUI extends JFrame {
 
     private void initializeSidePanel() {
         JPanel sidePanel = new JPanel();
+        sidePanel.add(Box.createVerticalStrut(10));
         sidePanel.setPreferredSize(new Dimension(200, 0));
         sidePanel.setBackground(new Color(51, 51, 51));
         sidePanel.setLayout(new BoxLayout(sidePanel, BoxLayout.Y_AXIS));
@@ -72,12 +69,14 @@ public class LibraryManagementGUI extends JFrame {
         });
         sidePanel.add(booksButton);
 
+
         JButton usersButton = createNavButton("Users");
         usersButton.addActionListener(e -> {
             loadUserList();
             cardLayout.show(mainPanel, "USERS");
         });
         sidePanel.add(usersButton);
+
 
         JButton borrowingsButton = createNavButton("Borrowings");
         borrowingsButton.addActionListener(e -> {
@@ -86,6 +85,7 @@ public class LibraryManagementGUI extends JFrame {
         });
         sidePanel.add(borrowingsButton);
 
+
         JButton returnsButton = createNavButton("Returns");
         returnsButton.addActionListener(e -> {
             loadReturnList();
@@ -93,7 +93,16 @@ public class LibraryManagementGUI extends JFrame {
         });
         sidePanel.add(returnsButton);
 
+        
+        JButton statsButton = createNavButton("Statistics");
+        statsButton.addActionListener(e -> cardLayout.show(mainPanel, "STATISTICS"));
+        sidePanel.add(statsButton);
+
+
+
+
         getContentPane().add(sidePanel, BorderLayout.WEST);
+        booksButton.setBackground(new Color(102, 102, 102));
     }
 
     private JButton createNavButton(String text) {
@@ -104,18 +113,46 @@ public class LibraryManagementGUI extends JFrame {
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setMaximumSize(new Dimension(180, 50)); 
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+
+        button.addActionListener(e -> {
+            resetNavButtonColors();
+            button.setBackground(new Color(102, 102, 102)); 
+        });
+
         return button;
     }
+
+    private void resetNavButtonColors() {
+        Component[] components = getContentPane().getComponents();
+        for (Component component : components) {
+            if (component instanceof JPanel) {
+                JPanel panel = (JPanel) component;
+                for (Component subComponent : panel.getComponents()) {
+                    if (subComponent instanceof JButton) {
+                        JButton navButton = (JButton) subComponent;
+                        navButton.setBackground(new Color(51, 51, 51)); 
+                    }
+                }
+            }
+        }
+    }
+
+    
     
     private JButton createStyledButton(String text) {
         JButton button = new JButton(text);
         button.setForeground(Color.WHITE);
-        button.setBackground(new Color(51, 51, 51)); // Dark gray background
+        button.setBackground(new Color(51, 51, 51));
         button.setFocusPainted(false);
         button.setFont(new Font("Arial", Font.BOLD, 14));
-        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20)); // Add padding
+        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20)); 
         return button;
     }
+    
+    
 
 
     private void initializeBooksPanel() {
@@ -124,180 +161,244 @@ public class LibraryManagementGUI extends JFrame {
         String[] columns = {"ID", "Title", "Author", "Year", "Genre"};
         booksTableModel = new DefaultTableModel(columns, 0);
         booksTable = new JTable(booksTableModel);
-        
-        // Add Search Bar
+
+        JPanel topPanel = new JPanel(new BorderLayout());
+
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JTextField searchField = new JTextField();
         searchField.setPreferredSize(new Dimension(200, 40));
         JButton searchButton = createStyledButton("Search");
+        searchButton.setPreferredSize(new Dimension(100, 40));
 
         searchButton.addActionListener(e -> searchBooks(searchField.getText()));
-
         searchPanel.add(searchField);
         searchPanel.add(searchButton);
 
-        booksPanel.add(searchPanel, BorderLayout.NORTH);
-        
+
+        JButton refreshButton = createStyledButton("Refresh");
+        refreshButton.setPreferredSize(new Dimension(100, 40)); 
+        refreshButton.addActionListener(e -> loadBookList());
+
+        JPanel refreshPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        refreshPanel.add(refreshButton);
+
+
+        topPanel.add(searchPanel, BorderLayout.WEST);
+        topPanel.add(refreshPanel, BorderLayout.EAST);
+
+        booksPanel.add(topPanel, BorderLayout.NORTH);
         booksPanel.add(new JScrollPane(booksTable), BorderLayout.CENTER);
 
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
 
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton addButton = createStyledButton("Add Book");
         JButton deleteButton = createStyledButton("Delete Book");
         JButton modifyButton = createStyledButton("Modify Book");
-        JButton refreshButton = createStyledButton("Refresh");
-
 
         addButton.addActionListener(e -> showAddBookDialog());
         deleteButton.addActionListener(e -> deleteSelectedBook());
         modifyButton.addActionListener(e -> showModifyBookDialog());
-        refreshButton.addActionListener(e -> loadBookList());
-
 
         buttonPanel.add(addButton);
         buttonPanel.add(deleteButton);
         buttonPanel.add(modifyButton);
-        buttonPanel.add(refreshButton);
 
         booksPanel.add(buttonPanel, BorderLayout.SOUTH);
         mainPanel.add(booksPanel, "BOOKS");
     }
-    
 
-	private void initializeUsersPanel() {
+
+    private void initializeUsersPanel() {
         JPanel usersPanel = new JPanel(new BorderLayout());
 
         String[] columns = {"ID", "Name", "Email", "Role"};
         usersTableModel = new DefaultTableModel(columns, 0);
         usersTable = new JTable(usersTableModel);
-        
-        // Add Search Bar
+
+        JPanel topPanel = new JPanel(new BorderLayout());
+
+
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JTextField searchField = new JTextField();
         searchField.setPreferredSize(new Dimension(200, 40));
         JButton searchButton = createStyledButton("Search");
+        searchButton.setPreferredSize(new Dimension(100, 40)); 
 
         searchButton.addActionListener(e -> searchUsers(searchField.getText()));
-
         searchPanel.add(searchField);
         searchPanel.add(searchButton);
 
-        usersPanel.add(searchPanel, BorderLayout.NORTH);
-        
+        JButton refreshButton = createStyledButton("Refresh");
+        refreshButton.setPreferredSize(new Dimension(100, 40)); 
+        refreshButton.addActionListener(e -> loadUserList());
+
+        JPanel refreshPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        refreshPanel.add(refreshButton);
+
+
+        topPanel.add(searchPanel, BorderLayout.WEST);
+        topPanel.add(refreshPanel, BorderLayout.EAST);
+
+        usersPanel.add(topPanel, BorderLayout.NORTH);
         usersPanel.add(new JScrollPane(usersTable), BorderLayout.CENTER);
 
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
 
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton addButton = createStyledButton("Add User");
         JButton deleteButton = createStyledButton("Delete User");
         JButton modifyButton = createStyledButton("Modify User");
-        JButton refreshButton = createStyledButton("Refresh");
         JButton viewHistoryButton = createStyledButton("View History");
 
         addButton.addActionListener(e -> showAddUserDialog());
         deleteButton.addActionListener(e -> deleteSelectedUser());
         modifyButton.addActionListener(e -> showModifyUserDialog());
-        refreshButton.addActionListener(e -> loadUserList());
         viewHistoryButton.addActionListener(e -> showUserHistoryDialog());
-        
+
         buttonPanel.add(addButton);
         buttonPanel.add(deleteButton);
         buttonPanel.add(modifyButton);
         buttonPanel.add(viewHistoryButton);
-        buttonPanel.add(refreshButton);
 
         usersPanel.add(buttonPanel, BorderLayout.SOUTH);
         mainPanel.add(usersPanel, "USERS");
     }
 
-	private void initializeBorrowingsPanel() {
-	    JPanel borrowingsPanel = new JPanel(new BorderLayout());
-	    
-	    JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JTextField searchField = new JTextField();
-        searchField.setPreferredSize(new Dimension(200, 40));
-        JButton searchButton = createStyledButton("Search");
 
-        searchButton.addActionListener(e -> searchBorrowings(searchField.getText()));
+    private void initializeBorrowingsPanel() {
+        JPanel borrowingsPanel = new JPanel(new BorderLayout());
 
-        searchPanel.add(searchField);
-        searchPanel.add(searchButton);
+        String[] columns = {"ID", "User Name", "Book Title", "Borrow Date", "Due Date", "Status"};
+        borrowingsTableModel = new DefaultTableModel(columns, 0);
+        borrowingsTable = new JTable(borrowingsTableModel);
 
-        borrowingsPanel.add(searchPanel, BorderLayout.NORTH);
-	    borrowingsPanel.add(new JScrollPane(borrowingsTable), BorderLayout.CENTER);
+        JPanel topPanel = new JPanel(new BorderLayout());
 
-	    JPanel buttonPanel = new JPanel();
-	    buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
-
-	    // Update columns to include User Name, Book Title, and Status
-	    String[] columns = {"ID", "User Name", "Book Title", "Borrow Date", "Due Date", "Status"};
-	    borrowingsTableModel = new DefaultTableModel(columns, 0);
-	    borrowingsTable = new JTable(borrowingsTableModel);
-	    borrowingsPanel.add(new JScrollPane(borrowingsTable), BorderLayout.CENTER);
-
-	    // Buttons for Borrowings
-
-	    JButton addButton = createStyledButton("Add Borrowing");
-	    JButton deleteButton = createStyledButton("Delete Borrowing");
-	    JButton returnButton = createStyledButton("Mark as Returned");
-	    JButton extendButton = createStyledButton("Extend Due Date");
-	    JButton refreshButton = createStyledButton("Refresh");
-	    
-	    addButton.addActionListener(e -> showAddBorrowingDialog());
-	    deleteButton.addActionListener(e -> deleteSelectedBorrowing());
-	    returnButton.addActionListener(e -> markBorrowingAsReturned());
-	    extendButton.addActionListener(e -> showExtendBorrowingDialog());
-	    refreshButton.addActionListener(e -> loadBorrowingList());
-	    
-	    buttonPanel.add(addButton);
-	    buttonPanel.add(deleteButton);
-	    buttonPanel.add(returnButton);
-	    buttonPanel.add(refreshButton);
-	    buttonPanel.add(extendButton);
-
-	    borrowingsPanel.add(buttonPanel, BorderLayout.SOUTH);
-	    mainPanel.add(borrowingsPanel, "BORROWINGS");
-	}
-
-
-	private void initializeReturnsPanel() {
-	    JPanel returnsPanel = new JPanel(new BorderLayout());
-
-	    
-	    String[] columns = {"Return ID", "Borrowing ID", "User Name", "Book Title", "Borrow Date", "Due Date", "Return Date", "Status", "Penalty"};
-	    returnsTableModel = new DefaultTableModel(columns, 0);
-	    returnsTable = new JTable(returnsTableModel);
-	    
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JTextField searchField = new JTextField();
         searchField.setPreferredSize(new Dimension(200, 40));
         JButton searchButton = createStyledButton("Search");
+        searchButton.setPreferredSize(new Dimension(100, 40)); 
 
+        searchButton.addActionListener(e -> searchBorrowings(searchField.getText()));
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
+
+        JButton refreshButton = createStyledButton("Refresh");
+        refreshButton.setPreferredSize(new Dimension(100, 40)); 
+        refreshButton.addActionListener(e -> loadBorrowingList());
+
+        JPanel refreshPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        refreshPanel.add(refreshButton);
+
+
+        topPanel.add(searchPanel, BorderLayout.WEST);
+        topPanel.add(refreshPanel, BorderLayout.EAST);
+
+        borrowingsPanel.add(topPanel, BorderLayout.NORTH);
+        borrowingsPanel.add(new JScrollPane(borrowingsTable), BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton addButton = createStyledButton("Add Borrowing");
+        JButton deleteButton = createStyledButton("Delete Borrowing");
+        JButton returnButton = createStyledButton("Mark as Returned");
+        JButton extendButton = createStyledButton("Extend Due Date");
+
+        addButton.addActionListener(e -> showAddBorrowingDialog());
+        deleteButton.addActionListener(e -> deleteSelectedBorrowing());
+        returnButton.addActionListener(e -> markBorrowingAsReturned());
+        extendButton.addActionListener(e -> showExtendBorrowingDialog());
+
+        buttonPanel.add(addButton);
+        buttonPanel.add(deleteButton);
+        buttonPanel.add(returnButton);
+        buttonPanel.add(extendButton);
+
+        borrowingsPanel.add(buttonPanel, BorderLayout.SOUTH);
+        mainPanel.add(borrowingsPanel, "BORROWINGS");
+    }
+
+
+    private void initializeReturnsPanel() {
+        JPanel returnsPanel = new JPanel(new BorderLayout());
+
+        String[] columns = {"Return ID", "Borrowing ID", "User Name", "Book Title", "Borrow Date", "Due Date", "Return Date", "Status", "Penalty"};
+        returnsTableModel = new DefaultTableModel(columns, 0);
+        returnsTable = new JTable(returnsTableModel);
+
+        JPanel topPanel = new JPanel(new BorderLayout());
+
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JTextField searchField = new JTextField();
+        searchField.setPreferredSize(new Dimension(200, 40));
+        JButton searchButton = createStyledButton("Search");
+        searchButton.setPreferredSize(new Dimension(100, 40)); 
         searchButton.addActionListener(e -> searchReturns(searchField.getText()));
 
         searchPanel.add(searchField);
         searchPanel.add(searchButton);
 
-        returnsPanel.add(searchPanel, BorderLayout.NORTH);
-	    
-	    returnsPanel.add(new JScrollPane(returnsTable), BorderLayout.CENTER);
+        JButton refreshButton = createStyledButton("Refresh");
+        refreshButton.setPreferredSize(new Dimension(100, 40));
+        refreshButton.addActionListener(e -> loadReturnList());
 
-	    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-	    JButton refreshButton = createStyledButton("Refresh");
+        JPanel refreshPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        refreshPanel.add(refreshButton);
 
-	    refreshButton.addActionListener(e -> loadReturnList());
+        topPanel.add(searchPanel, BorderLayout.WEST);
+        topPanel.add(refreshPanel, BorderLayout.EAST);
 
-	    buttonPanel.add(refreshButton);
+        returnsPanel.add(topPanel, BorderLayout.NORTH);
+        returnsPanel.add(new JScrollPane(returnsTable), BorderLayout.CENTER);
 
-	    returnsPanel.add(buttonPanel, BorderLayout.SOUTH);
-	    mainPanel.add(returnsPanel, "RETURNS");
-	}
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton deleteReturnButton = createStyledButton("Delete Return");
+        deleteReturnButton.addActionListener(e -> deleteSelectedReturn());
 
+        buttonPanel.add(deleteReturnButton);
+
+        returnsPanel.add(buttonPanel, BorderLayout.SOUTH);
+        mainPanel.add(returnsPanel, "RETURNS");
+    }
+
+
+    private void initializeStatisticsPanel() {
+        JPanel statsPanel = new JPanel(new BorderLayout());
+
+        String[] columns = {"Report Name", "Description", "Value"};
+        DefaultTableModel statsTableModel = new DefaultTableModel(columns, 0);
+        JTable statsTable = new JTable(statsTableModel);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton generateReportButton = createStyledButton("Generate Report");
+
+        generateReportButton.addActionListener(e -> {
+            StatisticsController statisticsController = new StatisticsController(
+                    borrowingController.getAllBorrowings(),
+                    userController.getAllUsers(),
+                    bookController.getAllBooks()
+            );
+
+            List<StatisticsReport> stats = statisticsController.generateStatistics();
+
+            statsTableModel.setRowCount(0);
+            for (StatisticsReport stat : stats) {
+                statsTableModel.addRow(new Object[]{
+                        stat.getReportName(),
+                        stat.getDescription(),
+                        stat.getValue()
+                });
+            }
+        });
+
+        buttonPanel.add(generateReportButton);
+        statsPanel.add(buttonPanel, BorderLayout.NORTH);
+        statsPanel.add(new JScrollPane(statsTable), BorderLayout.CENTER);
+
+        mainPanel.add(statsPanel, "STATISTICS");
+    }
 
     private void showAddBookDialog() {
-        JPanel panel = new JPanel(new GridLayout(5, 2));
+        JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10));
 
         JTextField titleField = new JTextField();
         JTextField authorField = new JTextField();
@@ -341,9 +442,9 @@ public class LibraryManagementGUI extends JFrame {
         }
 
         int bookId = (int) booksTableModel.getValueAt(selectedRow, 0);
-        Book book = bookController.getBookById(bookId); // Ensure this method exists in BookController
+        Book book = bookController.getBookById(bookId); 
 
-        JPanel panel = new JPanel(new GridLayout(5, 2));
+        JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10));
 
         JTextField titleField = new JTextField(book.getTitle());
         JTextField authorField = new JTextField(book.getAuthor());
@@ -379,17 +480,8 @@ public class LibraryManagementGUI extends JFrame {
     }
 
 
-    private void showSearchBookDialog() {
-        String searchTerm = JOptionPane.showInputDialog(this, "Enter search term:");
-        List<Book> results = bookController.searchBooks(searchTerm);
-        booksTableModel.setRowCount(0);
-        for (Book book : results) {
-            booksTableModel.addRow(new Object[]{book.getId(), book.getTitle(), book.getAuthor(), book.getPublicationYear(), book.getGenre()});
-        }
-    }
-
     private void showAddUserDialog() {
-        JPanel panel = new JPanel(new GridLayout(3, 2));
+        JPanel panel = new JPanel(new GridLayout(5, 3));
 
         JTextField nameField = new JTextField();
         JTextField emailField = new JTextField();
@@ -428,9 +520,9 @@ public class LibraryManagementGUI extends JFrame {
         }
 
         int userId = (int) usersTableModel.getValueAt(selectedRow, 0);
-        User user = userController.getUserById(userId); // Ensure this method exists in UserController
+        User user = userController.getUserById(userId);
 
-        JPanel panel = new JPanel(new GridLayout(3, 2));
+        JPanel panel = new JPanel(new GridLayout(5, 3));
 
         JTextField nameField = new JTextField(user.getName());
         JTextField emailField = new JTextField(user.getEmail());
@@ -462,14 +554,6 @@ public class LibraryManagementGUI extends JFrame {
     }
 
 
-    private void showSearchUserDialog() {
-        String searchTerm = JOptionPane.showInputDialog(this, "Enter search term:");
-        List<User> results = userController.searchUsers(searchTerm);
-        usersTableModel.setRowCount(0);
-        for (User user : results) {
-            usersTableModel.addRow(new Object[]{user.getId(), user.getName(), user.getEmail(), user.getRole()});
-        }
-    }
     
     private void deleteSelectedBook() {
         int selectedRow = booksTable.getSelectedRow();
@@ -487,7 +571,7 @@ public class LibraryManagementGUI extends JFrame {
         );
 
         if (confirm == JOptionPane.YES_OPTION) {
-            bookController.deleteBook(bookId); // Assuming deleteBook is implemented in BookController
+            bookController.deleteBook(bookId); 
             loadBookList();
             JOptionPane.showMessageDialog(this, "Book deleted successfully.");
         }
@@ -534,14 +618,14 @@ public class LibraryManagementGUI extends JFrame {
 	    historyFrame.setSize(900, 500);
 	    historyFrame.setLocationRelativeTo(this);
 
-	    String[] columns = {"Book Title", "Date", "Due Date", "Return Date", "Status", "Penalty"};
+	    String[] columns = {"Book Title or ID", "Date", "Due Date", "Return Date", "Status", "Penalty"};
 	    DefaultTableModel historyTableModel = new DefaultTableModel(columns, 0);
 	    JTable historyTable = new JTable(historyTableModel);
 
 	    // Add borrowing history
 	    for (Borrowing borrowing : borrowings) {
 	        historyTableModel.addRow(new Object[]{
-	                borrowing.getBookId(), // Ensure Borrowing stores or fetches book title
+	                borrowing.getBookId(),
 	                borrowing.getBorrowDate(),
 	                borrowing.getDueDate(),
 	                "",
@@ -573,7 +657,6 @@ public class LibraryManagementGUI extends JFrame {
         JComboBox<String> userDropdown = new JComboBox<>();
         JComboBox<String> bookDropdown = new JComboBox<>();
 
-        // Populate dropdowns
         for (User user : userController.getAllUsers()) {
             userDropdown.addItem(user.getId() + " - " + user.getName());
         }
@@ -621,7 +704,7 @@ public class LibraryManagementGUI extends JFrame {
             return;
         }
 
-        // Retrieve the borrowing ID
+
         int borrowingId = (int) borrowingsTableModel.getValueAt(selectedRow, 0);
         Borrowing borrowing = borrowingController.getBorrowingById(borrowingId);
 
@@ -630,7 +713,7 @@ public class LibraryManagementGUI extends JFrame {
             return;
         }
 
-        // Prompt for return date
+
         String returnDate = JOptionPane.showInputDialog(this, "Enter Return Date (YYYY-MM-DD):", java.time.LocalDate.now().toString());
         if (returnDate == null || returnDate.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Invalid return date.");
@@ -692,54 +775,11 @@ public class LibraryManagementGUI extends JFrame {
         }
 
         try {
-            borrowingController.extendDueDate(borrowingId, newDueDate); // Update the due date
+            borrowingController.extendDueDate(borrowingId, newDueDate);
             loadBorrowingList(); 
             JOptionPane.showMessageDialog(this, "Due date extended successfully.");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "An error occurred: " + e.getMessage());
-        }
-    }
-
-    
-    
-
-    private void showAddReturnDialog() {
-        JPanel panel = new JPanel(new GridLayout(2, 2));
-
-        JTextField borrowingIdField = new JTextField();
-        JTextField returnDateField = new JTextField(java.time.LocalDate.now().toString()); // Pre-filled with today's date
-
-        panel.add(new JLabel("Borrowing ID:"));
-        panel.add(borrowingIdField);
-        panel.add(new JLabel("Return Date (YYYY-MM-DD):"));
-        panel.add(returnDateField);
-
-        int result = JOptionPane.showConfirmDialog(
-                this, panel, "Add Return", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-        if (result == JOptionPane.OK_OPTION) {
-            try {
-                int borrowingId = Integer.parseInt(borrowingIdField.getText());
-                String returnDate = returnDateField.getText();
-
-                // Fetch the borrowing object
-                Borrowing borrowing = borrowingController.getBorrowingById(borrowingId);
-                if (borrowing == null) {
-                    JOptionPane.showMessageDialog(this, "Borrowing ID not found.");
-                    return;
-                }
-
-                // Register the return with penalty
-                returnController.registerReturnWithPenalty(borrowing, returnDate, userController, bookController);
-
-                // Refresh the returns list
-                loadReturnList();
-                JOptionPane.showMessageDialog(this, "Return added successfully.");
-            } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(this, "Invalid input. Please ensure Borrowing ID is a number.");
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "An error occurred: " + e.getMessage());
-            }
         }
     }
 
@@ -814,6 +854,7 @@ public class LibraryManagementGUI extends JFrame {
             });
         }
     }
+    
     
     // Search
     private void searchBooks(String query) {
