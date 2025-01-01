@@ -718,7 +718,7 @@ public class LibraryManagementGUI extends JFrame {
 
         try {
             returnController.registerReturnWithPenalty(borrowing, returnDate, userController, bookController);
-            borrowingController.removeBorrowing(borrowingId);
+            borrowingController.deleteBorrowing(borrowingId);
             loadBorrowingList();
             loadReturnList();
 
@@ -749,6 +749,27 @@ public class LibraryManagementGUI extends JFrame {
          }
      }
 
+     private void loadBorrowingList() {
+         List<Borrowing> borrowings = borrowingController.getAllBorrowings();
+         borrowingsTableModel.setRowCount(0);
+
+         for (Borrowing borrowing : borrowings) {
+             User user = userController.getUserById(borrowing.getUserId());
+             Book book = bookController.getBookById(borrowing.getBookId());
+             String userName = user != null ? user.getName() : "Unknown User";
+             String bookTitle = book != null ? book.getTitle() : "Unknown Book";
+
+             borrowingsTableModel.addRow(new Object[]{
+                 borrowing.getId(),
+                 userName,
+                 bookTitle,
+                 borrowing.getBorrowDate(),
+                 borrowing.getDueDate(),
+                 borrowing.getStatus()
+             });
+         }
+     }
+
 
     
 //Return Actions 
@@ -763,27 +784,6 @@ public class LibraryManagementGUI extends JFrame {
         loadReturnList();
     }
     
-    private void loadBorrowingList() {
-        List<Borrowing> borrowings = borrowingController.getAllBorrowings();
-        borrowingsTableModel.setRowCount(0);
-
-        for (Borrowing borrowing : borrowings) {
-            User user = userController.getUserById(borrowing.getUserId());
-            Book book = bookController.getBookById(borrowing.getBookId());
-            String userName = user != null ? user.getName() : "Unknown User";
-            String bookTitle = book != null ? book.getTitle() : "Unknown Book";
-
-            borrowingsTableModel.addRow(new Object[]{
-                borrowing.getId(),
-                userName,
-                bookTitle,
-                borrowing.getBorrowDate(),
-                borrowing.getDueDate(),
-                borrowing.getStatus()
-            });
-        }
-    }
-
 
     private void loadReturnList() {
         List<Return> returns = returnController.getAllReturns();

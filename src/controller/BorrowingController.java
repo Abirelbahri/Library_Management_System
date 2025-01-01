@@ -68,29 +68,13 @@ public class BorrowingController {
         saveBorrowingsToCSV();
     }
 
-    public void extendBorrowing(int id, String newDueDate) {
-        Borrowing borrowing = getBorrowingById(id);
-        if (borrowing != null) {
-            borrowing.setDueDate(newDueDate);
-            saveBorrowingsToCSV();
-        }
-    }
     
-    public void removeBorrowing(int borrowingId) {
+    public void deleteBorrowing(int borrowingId) {
         Borrowing borrowing = getBorrowingById(borrowingId);
         if (borrowing != null) {
             borrowings.remove(borrowing);
             saveBorrowingsToCSV();
         }
-    }
-
-
-    public List<Borrowing> searchBorrowings(String searchTerm) {
-        return borrowings.stream()
-                .filter(borrowing -> borrowing.getBorrowDate().toLowerCase().contains(searchTerm.toLowerCase()) ||
-                                String.valueOf(borrowing.getUserId()).contains(searchTerm) ||
-                                String.valueOf(borrowing.getBookId()).contains(searchTerm))
-                .collect(Collectors.toList());
     }
 
     public void listBorrowings() {
@@ -104,13 +88,6 @@ public class BorrowingController {
                 .orElse(null);
     }
     
-    public void deleteBorrowing(int borrowingId) {
-        Borrowing borrowing = getBorrowingById(borrowingId);
-        if (borrowing != null) {
-            borrowings.remove(borrowing);
-            saveBorrowingsToCSV();
-        }
-    }
     
     public void extendDueDate(int borrowingId, String newDueDate) {
         Borrowing borrowing = getBorrowingById(borrowingId);
@@ -129,16 +106,6 @@ public class BorrowingController {
                 .collect(Collectors.toList());
     }
     
-    public void updateBorrowing(Borrowing updatedBorrowing) {
-        List<Borrowing> borrowings = getAllBorrowings();
-        for (int i = 0; i < borrowings.size(); i++) {
-            if (borrowings.get(i).getId() == updatedBorrowing.getId()) {
-                borrowings.set(i, updatedBorrowing);
-                break;
-            }
-        }
-        saveBorrowingsToCSV();
-    }
 
     public List<Borrowing> getAllBorrowings() {
         return borrowings;

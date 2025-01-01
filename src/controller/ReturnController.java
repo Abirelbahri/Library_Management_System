@@ -59,21 +59,18 @@ public class ReturnController {
     
     
     public void registerReturnWithPenalty(Borrowing borrowing, String returnDate, UserController userController, BookController bookController) {
-        // Calculate penalty if the return date is after the due date
         double penalty = 0.0;
         java.time.LocalDate dueDate = java.time.LocalDate.parse(borrowing.getDueDate());
         java.time.LocalDate actualReturnDate = java.time.LocalDate.parse(returnDate);
 
         if (actualReturnDate.isAfter(dueDate)) {
             long daysLate = java.time.temporal.ChronoUnit.DAYS.between(dueDate, actualReturnDate);
-            penalty = daysLate * 1.0; // Assuming $1/day penalty
+            penalty = daysLate * 1.0; 
         }
 
-        // Fetch user name and book title
         String userName = userController.getUserById(borrowing.getUserId()).getName();
         String bookTitle = bookController.getBookById(borrowing.getBookId()).getTitle();
 
-        // Register the return
         Return ret = new Return(
                 borrowing.getId(),
                 userName,
@@ -86,8 +83,6 @@ public class ReturnController {
         );
         registerReturn(ret);
     }
-
-
 
 
     private void saveReturnsToCSV() {
@@ -143,7 +138,6 @@ public class ReturnController {
     }
 
     
-
     public List<Return> getAllReturns() {
         return returns;
     }

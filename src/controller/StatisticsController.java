@@ -53,7 +53,6 @@ public class StatisticsController {
                 .orElse("No Data");
 
         stats.add(new StatisticsReport("Most Active User", mostActiveUserName, userActivityCounts.getOrDefault(mostActiveUserId, 0L).intValue()));
-
         stats.add(new StatisticsReport("Total Books", "Total number of books in the library", books.size()));
         stats.add(new StatisticsReport("Total Users", "Total number of registered users", users.size()));
         stats.add(new StatisticsReport("Total Borrowings", "Total number of borrowings", borrowings.size()));
