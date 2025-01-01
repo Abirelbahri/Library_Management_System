@@ -128,7 +128,17 @@ public class BorrowingController {
                 .filter(borrowing -> borrowing.getUserId() == userId)
                 .collect(Collectors.toList());
     }
-
+    
+    public void updateBorrowing(Borrowing updatedBorrowing) {
+        List<Borrowing> borrowings = getAllBorrowings();
+        for (int i = 0; i < borrowings.size(); i++) {
+            if (borrowings.get(i).getId() == updatedBorrowing.getId()) {
+                borrowings.set(i, updatedBorrowing);
+                break;
+            }
+        }
+        saveBorrowingsToCSV();
+    }
 
     public List<Borrowing> getAllBorrowings() {
         return borrowings;

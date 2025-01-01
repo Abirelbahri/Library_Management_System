@@ -4,14 +4,12 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class CSVUtils {
-    // Read from a CSV file and return a list of strings (each representing a row)
-	
+public class CSVUtils {	
 	private static void ensureFileExists(String filePath) {
 	    File file = new File(filePath);
 	    if (!file.exists()) {
 	        try {
-	            file.createNewFile(); // Create an empty file if it doesn't exist
+	            file.createNewFile(); 
 	        } catch (IOException e) {
 	            System.err.println("Could not create file: " + filePath);
 	            e.printStackTrace();
@@ -34,7 +32,7 @@ public class CSVUtils {
         return data;
     }
 
-    // Write a list of strings (rows) to a CSV file
+
     public static void writeToCSV(String filePath, List<String[]> data) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
             for (String[] row : data) {
